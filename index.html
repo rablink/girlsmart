@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Girlsmart</title>
+    <!-- Include necessary libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        /* New Dark-Pink Futuristic Color Palette */
+        :root{
+            --bg: #111827; /* Dark Slate */
+            --card: #1f2937; /* Slightly lighter dark gray */
+            --accent: #ec4899; /* Bright Pink/Magenta */
+            --accent-hover: #f472b6; 
+            --green: #4ade80; /* Success Green */
+            --red: #ef4444; /* Error Red */
+            --muted: #9ca3af; /* Light Gray for subtle text */
+            --text: #f9fafb; /* White Text */
+        }
+        *{box-sizing:border-box}
+        body {
+            font-family: 'Inter', system-ui, Arial, sans-serif;
+            margin: 0;
+            background-color: var(--bg);
+            color: var(--text);
+            transition: background-color 0.3s;
+        }
+        header{
+            background: rgba(30, 41, 59, 0.95); /* Semi-transparent dark header */
+            backdrop-filter: blur(5px);
+            color: var(--text); 
+            padding: 18px 16px; 
+            font-weight: 800; 
+            letter-spacing: 1px;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: flex-start; /* Header now only contains title */
+            align-items: center;
+        }
+        header .title-text {
+            /* flex-grow: 1; removed to keep title left-aligned */
+            text-align: left; /* Ensure title is left-aligned */
+        }
+        .wrap{
+            max-width: 1100px; 
+            margin: 28px auto; 
+            padding: 0 16px;
+        }
+        .filter-bar {
+            /* Mengubah menjadi flex agar kategori di kiri dan tombol di kanan */
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom: 20px;
+            gap: 12px;
+        }
+        /* Group the buttons */
+        #navControls {
+            display: flex; 
+            gap: 8px; 
+            align-items: center;
+        }
+        /* Buttons Styling */
+        .btn-rekap, .btn-order, .checkout-btn, .clear-cart, .popup-btn {
+            border: none;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+            white-space: nowrap; /* Prevent button text wrapping */
+        }
+        .btn-rekap {
+            background: var(--accent);
+            color: var(--bg);
+        }
+        .btn-rekap:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+        
+        /* Specific Cart Button */
+        #cartButton {
+            background: var(--accent); 
+            color: var(--bg); 
+        }
+        /* Rekap button style */
+        #rekapButton {
+            background: #374151; 
+            color: var(--text);
+        }
+
+
+        select {
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 2px solid var(--card);
+            background-color: var(--card);
+            color: var(--text);
+            font-weight: 600;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23f9fafb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-chevron-down"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 30px;
+        }
+        .grid{
+            display:grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+        @media (max-width:1200px){ .grid{ grid-template-columns: repeat(3, 1fr);} }
+        @media (max-width:768px){ .grid{ grid-template-columns: repeat(2, 1fr);} }
+        @media (max-width:560px){ .grid{ grid-template-columns: 1fr;} }
+        
+        .card{
+            background: var(--card); 
+            border-radius: 14px; 
+            padding: 16px; 
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            min-height: 120px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent);
+        }
+        .title{ font-weight: 700; font-size: 1.1rem; color: var(--text); }
+        .price{ color: var(--accent); font-weight: 700; font-size: 1.2rem; }
+        .stock{ color: var(--muted); font-size: 0.85rem; }
+        .controls{ 
+            margin-top: auto; 
+            display: flex; 
+            gap: 8px; 
+            align-items: center; 
+            justify-content: flex-end; 
+        }
+        .qty{ 
+            width: 70px; 
+            padding: 8px; 
+            border-radius: 8px; 
+            border: 1px solid var(--muted); 
+            text-align: center;
+            background: var(--bg);
+            color: var(--text);
+            font-weight: 600;
+        }
+        .btn-order{ 
+            background: var(--green); 
+            color: var(--bg); 
+            padding: 8px 12px;
+        }
+        .btn-order:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
+        }
+
+        /* Cart Popup (Drawer) */
+        .cart-overlay {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            display: none;
+            justify-content: flex-end;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .cart-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+        .cart {
+            width: 90%;
+            max-width: 400px;
+            background: var(--card); 
+            padding: 20px; 
+            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.5);
+            border-left: 1px solid var(--accent);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .cart-overlay.show .cart {
+            transform: translateX(0);
+        }
+        .cart h3{ margin: 0 0 15px 0; color: var(--accent); font-size: 1.3rem; }
+        .cart-list{ max-height: calc(100vh - 200px); overflow-y: auto; padding-right: 10px; flex-grow: 1; }
+        .cart-item{ 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 10px 0; 
+            border-bottom: 1px solid #374151; 
+            font-size: 1rem;
+        }
+        .cart-foot{ 
+            flex-shrink: 0;
+            display: flex; 
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px; 
+            padding-top: 15px;
+            border-top: 1px dashed var(--muted);
+        }
+        .cart-foot-buttons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .checkout-btn{ 
+            background: var(--accent); 
+            color: var(--bg); 
+            padding: 12px 18px; 
+            flex-grow: 1;
+            margin-left: 10px;
+        }
+        .clear-cart{ 
+            background: var(--red); 
+            color: var(--text); 
+            padding: 10px 14px; 
+            
+        }
+        .clear-cart:hover, .checkout-btn:hover {
+            transform: translateY(-1px);
+        }
+        .hint{ font-size: 0.9rem; color: var(--muted) }
+        
+        /* Recap Table Styling */
+        #rekapBox {
+            background: var(--card);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--accent);
+            margin-top: 20px;
+        }
+        #rekapBox h3 { color: var(--accent); margin-top: 0; }
+        #rekapBox table { border-collapse: collapse; width: 100%; font-size: 0.9rem; margin-top: 15px; }
+        #rekapBox th, #rekapBox td { 
+            border: 1px solid #374151; 
+            padding: 10px; 
+            text-align: left; 
+            color: var(--text);
+        }
+        #rekapBox th { 
+            background: #374151; 
+            color: var(--accent-hover); 
+            font-weight: 700; 
+        }
+        
+        /* Popup & Loading */
+        .popup-overlay, .loading-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            display: none; align-items: center; justify-content: center; z-index: 99999;
+        }
+        .popup-overlay{ background: rgba(0, 0, 0, 0.7); }
+        .popup-box {
+            background: var(--card); 
+            padding: 24px; 
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); 
+            max-width: 320px; 
+            text-align: center;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid var(--accent);
+        }
+        .popup-box h4 { margin-top: 0; color: var(--accent); }
+        .popup-btn {
+            background: var(--accent); 
+            color: var(--bg); 
+            margin-top: 15px;
+        }
+        .loading-overlay{
+            background: rgba(17, 24, 39, 0.8); 
+            flex-direction: column;
+            color: var(--text);
+        }
+        .spinner {
+            border: 5px solid var(--card); 
+            border-top: 5px solid var(--accent);
+            border-radius: 50%; 
+            width: 50px; 
+            height: 50px; 
+            animation: spin 1s linear infinite;
+        }
+        .loading-text { margin-top: 10px; font-weight: 600; color: var(--muted); }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+
+        /* Scrollbar Styling for cart list */
+        .cart-list::-webkit-scrollbar { width: 8px; }
+        .cart-list::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
+        .cart-list::-webkit-scrollbar-track { background: var(--card); }
+
+        /* Receipt styling update */
+        #receiptContent {
+            background: var(--bg) !important;
+            color: var(--text) !important;
+            border: 2px solid var(--accent) !important;
+        }
+        #receiptContent h3 { color: var(--accent) !important; }
+        #receiptContent table { border: none !important; }
+        #receiptContent th, #receiptContent td { border: none !important; }
+        #receiptContent tr { border-bottom: 1px dashed #374151 !important; }
+        #receiptContent div[style*="border-top:1px solid #ddd"] { border-top: 1px solid #374151 !important; }
+
+    </style>
+</head>
+<body>
+    <header>
+        <!-- Logo/Title - Kontrol navigasi dipindahkan ke filter-bar -->
+        <div class="title-text">GirlsMart TJKT 1</div>
+    </header>
+    
+    <div class="wrap">
+        <!-- Filter Bar - Sekarang menampung kategori dan tombol navigasi -->
+        <div class="filter-bar">
+            <select id="categoryFilter" onchange="filterCategory()">
+                <option value="all">Semua Kategori</option>
+                <option value="makanan">Makanan</option>
+                <option value="minuman">Minuman</option>
+                <option value="alat_tulis">Alat Tulis</option>
+                <option value="pakaian">Pakaian</option>
+                <option value="obat">Obat-obatan</option>
+            </select>
+            
+            <!-- Kontrol Cart dan Rekap (Dipindahkan) -->
+            <div id="navControls">
+                 <button id="cartButton" class="btn-rekap" onclick="toggleCartPopup()">🛒 Keranjang (0)</button>
+                 <button id="rekapButton" onclick="toggleRekap()" class="btn-rekap">📊 Rekap</button>
+            </div>
+        </div>
+
+        <!-- Product Grid -->
+        <div id="productGrid" class="grid"></div>
+
+        <!-- Transaction Recap Section -->
+        <div id="rekapBox" style="display:none;">
+            <h3>📊 Rekap Transaksi Penjualan</h3>
+            <div style="overflow-x: auto;">
+                <table id="rekapTable">
+                    <thead>
+                        <tr>
+                            <th>ID Transaksi</th>
+                            <th>Waktu</th>
+                            <th>Total</th>
+                            <th>Detail Item</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="4">Memuat...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="text-align:right;margin-top:15px;">
+                <button onclick="toggleRekap()" class="clear-cart" style="background: #374151;">Tutup Rekap</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cart Popup Overlay (New Position) -->
+    <div id="cartOverlay" class="cart-overlay" onclick="if(event.target.id === 'cartOverlay') toggleCartPopup()">
+        <div id="cartDrawer" class="cart">
+            <h3>🛒 Keranjang Belanja</h3>
+            <div id="cartList" class="cart-list"><div class="hint">Keranjang kosong.</div></div>
+            <div class="cart-foot">
+                <div id="cartTotal" class="hint">Total: Rp 0</div>
+                <div class="cart-foot-buttons">
+                    <button class="clear-cart" onclick="clearCart()">Kosongkan</button>
+                    <button class="checkout-btn" onclick="checkoutAll()">💳 Checkout Semua</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popup/Modal for Notifications -->
+    <div id="popup" class="popup-overlay">
+        <div class="popup-box">
+            <h4 id="popupTitle">Notifikasi</h4>
+            <p id="popupMsg">Pesan notifikasi</p>
+            <button class="popup-btn" onclick="closePopup()">OK</button>
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div id="loading" class="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Tunggu, memproses transaksi...</div>
+    </div>
+
+<script>
+// =================================================================
+// ⚠️ GANTI DENGAN URL APPS SCRIPT WEB APP ANDA SETELAH DI-DEPLOY!
+// =================================================================
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyEO5RTiWeF0oRFnUszllGIwrvko2mLlJP4eMicdviE8-ErkNh9QONc4M2CCn3MLTGl/exec";
+// Ganti dengan API Key jika Anda menggunakan Google Search Grounding.
+const apiKey = "";
+// =================================================================
+
+// Initial product data
+const products = [
+    { name: "Roti Coklat", price: 5000, stock: 30, category: "makanan" },
+    { name: "Keripik Singkong", price: 4000, stock: 40, category: "makanan" },
+    { name: "Mie Instan", price: 3500, stock: 60, category: "makanan" },
+    { name: "Air Mineral 600ml", price: 3000, stock: 80, category: "minuman" },
+    { name: "Teh Botol Sosro", price: 5000, stock: 50, category: "minuman" },
+    { name: "Kopi Good Day", price: 4000, stock: 70, category: "minuman" },
+    { name: "Buku Tulis Sinar Dunia", price: 5000, stock: 50, category: "alat_tulis" },
+    { name: "Pulpen Standard AE7", price: 4000, stock: 100, category: "alat_tulis" },
+    { name: "Penghapus Joyko", price: 2000, stock: 80, category: "alat_tulis" },
+    { name: "Kaos Seragam Putih", price: 45000, stock: 20, category: "pakaian" },
+    { name: "Celana Panjang Sekolah", price: 60000, stock: 15, category: "pakaian" },
+    { name: "Minyak Kayu Putih 60ml", price: 15000, stock: 25, category: "obat" },
+    { name: "Paracetamol Strip", price: 7000, stock: 40, category: "obat" },
+
+    { name: "Roti Tawar", price: 6000, stock: 25, category: "makanan" },
+    { name: "Keripik Pisang", price: 5500, stock: 35, category: "makanan" },
+    { name: "Susu UHT", price: 8000, stock: 45, category: "minuman" },
+    { name: "Jus Jeruk Botol", price: 7000, stock: 30, category: "minuman" },
+    { name: "Pensil 2B", price: 1500, stock: 120, category: "alat_tulis" },
+    { name: "Spidol Snowman", price: 6000, stock: 60, category: "alat_tulis" },
+    { name: "Baju Olahraga", price: 50000, stock: 18, category: "pakaian" },
+    { name: "Topi Sekolah", price: 25000, stock: 20, category: "pakaian" },
+    { name: "Obat Gosok", price: 18000, stock: 15, category: "obat" },
+    { name: "Antangin Sachet", price: 3000, stock: 50, category: "obat" },
+    { name: "Nasi Bungkus", price: 10000, stock: 20, category: "makanan" },
+    { name: "Kopi Sachet ABC", price: 2000, stock: 100, category: "minuman" },
+    { name: "Penggaris 30cm", price: 2500, stock: 75, category: "alat_tulis" },
+    { name: "Seragam Pramuka", price: 65000, stock: 12, category: "pakaian" },
+    { name: "Vitamin C Botol", price: 20000, stock: 30, category: "obat" },
+    { name: "Permen Kopiko", price: 1000, stock: 200, category: "makanan" },
+    { name: "Teh Celup Sariwangi", price: 9000, stock: 40, category: "minuman" },
+    { name: "Buku Gambar A4", price: 7000, stock: 60, category: "alat_tulis" },
+    { name: "Celana Training", price: 40000, stock: 22, category: "pakaian" },
+    { name: "Plester Luka", price: 5000, stock: 100, category: "obat" }
+];
+
+let filteredProducts = [...products];
+let cart = [];
+
+/**
+ * Toggles the display of the cart overlay (popup from the right).
+ */
+function toggleCartPopup() {
+    const overlay = document.getElementById("cartOverlay");
+    if (overlay.classList.contains('show')) {
+        overlay.classList.remove('show');
+        // Hide overlay completely after transition
+        setTimeout(() => { overlay.style.display = 'none'; }, 300);
+    } else {
+        overlay.style.display = 'flex';
+        // Add show class after display is set
+        setTimeout(() => { overlay.classList.add('show'); }, 10);
+        renderCart(); // Make sure cart is up-to-date when opening
+    }
+}
+
+/**
+ * Filter products based on selected category.
+ */
+function filterCategory(){
+    const val = document.getElementById("categoryFilter").value;
+    filteredProducts = val === "all" ? products : products.filter(p => p.category === val);
+    renderProducts();
+}
+
+/**
+ * Renders the products grid based on the filtered list.
+ */
+function renderProducts(){
+    const grid = document.getElementById("productGrid");
+    grid.innerHTML = "";
+    filteredProducts.forEach((p, idx) => {
+        const card = document.createElement("div");
+        card.className = "card";
+        // Check if stock is 0
+        const isOutOfStock = p.stock <= 0;
+        card.innerHTML = `
+            <div>
+                <div class="title">${p.name}</div>
+                <div class="price">Rp ${p.price.toLocaleString("id-ID")}</div>
+                <div class="stock">${isOutOfStock ? '<span style="color:var(--red); font-weight:700;">Stok Habis</span>' : `Stok: ${p.stock}`}</div>
+            </div>
+            <div class="controls">
+                <input type="number" id="qty-${idx}" class="qty" min="1" value="1" ${isOutOfStock ? 'disabled' : ''} />
+                <button class="btn-order btn" onclick="orderProduct(${idx})" ${isOutOfStock ? 'disabled' : ''}>Tambah</button>
+            </div>`;
+        grid.appendChild(card);
+    });
+}
+
+/**
+ * Adds a product to the cart and updates stock.
+ */
+function orderProduct(idx){
+    const qtyInput = document.getElementById(`qty-${idx}`);
+    const qty = parseInt(qtyInput.value);
+    const product = filteredProducts[idx];
+    
+    if(!product || isNaN(qty) || qty < 1) return;
+    if(product.stock < qty) return showPopup("Gagal", "Stok tidak cukup!");
+    
+    // Update stock and cart
+    product.stock -= qty;
+    const exist = cart.find(i => i.name === product.name);
+    
+    if(exist){ 
+        exist.quantity += qty; 
+        exist.subtotal = exist.price * exist.quantity; 
+    }
+    else { 
+        cart.push({...product, quantity: qty, subtotal: product.price * qty}); 
+    }
+    
+    // Reset quantity input to 1 after adding
+    qtyInput.value = 1;
+
+    renderCart(); 
+    renderProducts();
+}
+
+/**
+ * Renders the cart list, total, and updates the badge in the header.
+ */
+function renderCart(){
+    const list = document.getElementById("cartList");
+    const totalEl = document.getElementById("cartTotal");
+    const cartButton = document.getElementById("cartButton");
+    const total = cart.reduce((a, b) => a + b.subtotal, 0);
+    const totalItems = cart.reduce((a, b) => a + b.quantity, 0);
+
+    // Update Cart Button Text in Filter Bar
+    if(cartButton) {
+        cartButton.innerHTML = `🛒 Keranjang (${totalItems})`;
+    }
+
+    if(cart.length === 0){ 
+        list.innerHTML = '<div class="hint">Keranjang kosong.</div>'; 
+        totalEl.textContent = "Total: Rp 0"; 
+        return;
+    }
+    
+    list.innerHTML = cart.map((it, idx) => `
+        <div class="cart-item">
+            <div>${it.name} <span style="color:var(--accent); font-weight:600;">(${it.quantity}x)</span></div>
+            <div>Rp ${it.subtotal.toLocaleString("id-ID")}
+            <button style="margin-left:6px;padding:4px 8px;border:none;background:var(--red);color:#fff;border-radius:6px; font-weight: 500;" onclick="removeCart(${idx})">x</button></div>
+        </div>
+    `).join("");
+    
+    totalEl.textContent = "Total: Rp "+ total.toLocaleString("id-ID");
+}
+
+/**
+ * Removes an item from the cart and restores stock.
+ */
+function removeCart(i){ 
+    const it = cart[i]; 
+    const prod = products.find(p => p.name === it.name); 
+    if(prod) prod.stock += it.quantity; 
+    cart.splice(i, 1); 
+    renderCart(); 
+    renderProducts();
+}
+
+/**
+ * Clears the entire cart and restores all stock.
+ */
+function clearCart(){ 
+    cart.forEach(it => {
+        const prod = products.find(p => p.name === it.name); 
+        if(prod) prod.stock += it.quantity;
+    }); 
+    cart = []; 
+    renderCart(); 
+    renderProducts();
+}
+
+/**
+ * Displays the custom notification popup.
+ */
+function showPopup(t, m){
+    document.getElementById("popupTitle").textContent = t;
+    document.getElementById("popupMsg").textContent = m;
+    document.getElementById("popup").style.display = "flex";
+}
+
+/**
+ * Closes the custom notification popup.
+ */
+function closePopup(){
+    document.getElementById("popup").style.display = "none";
+}
+
+/**
+ * Handles the checkout process (sends data to external Google Sheet for recap).
+ * Menggunakan metode POST dengan 'no-cors' untuk keandalan.
+ */
+async function checkoutAll(){
+    if(cart.length === 0) return showPopup("Gagal","Keranjang kosong!");
+    
+    document.getElementById("loading").style.display = "flex";
+    
+    const total = cart.reduce((s, i) => s + i.subtotal, 0);
+    // Generate a unique transaction ID
+    const transactionId = "ORD-" + Date.now().toString(36).toUpperCase();
+    
+    // 1. Prepare data for the sheet
+    const transactionData = {
+        action: "addTransaction",
+        id: transactionId,
+        total: total,
+        detail: cart.map(i => `${i.name} (${i.quantity}x @Rp${i.price.toLocaleString("id-ID")})`).join(" | ")
+    };
+    
+    const formData = new URLSearchParams();
+    for(let key in transactionData) {
+        formData.append(key, transactionData[key]);
+    }
+    
+    let success = false;
+    
+    // === Implementasi Exponential Backoff untuk POST ke Apps Script ===
+    const MAX_RETRIES = 3;
+    let retries = 0;
+    
+    while(retries < MAX_RETRIES) {
+        try {
+            const response = await fetch(SCRIPT_URL, {
+                method: 'POST',
+                // Mode 'no-cors' harus digunakan untuk Apps Script POST dari domain asing. 
+                // Karena 'no-cors', kita tidak bisa membaca response, hanya memastikan tidak ada error jaringan.
+                mode: 'no-cors', 
+                cache: 'no-cache',
+                // Kirim sebagai application/x-www-form-urlencoded
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData 
+            });
+
+            // Dalam mode 'no-cors', response.ok akan selalu false. 
+            // Kita asumsikan sukses jika fetch() tidak melempar error.
+            success = true; 
+            break; // Exit loop on success
+        } catch (error) {
+            retries++;
+            console.warn(`Fetch attempt ${retries} failed. Retrying in ${Math.pow(2, retries)}s...`, error);
+            if (retries < MAX_RETRIES) {
+                // Wait using exponential backoff
+                await new Promise(resolve => setTimeout(resolve, Math.pow(2, retries) * 1000));
+            } else {
+                console.error("All fetch attempts failed. Transaction may not be recorded.");
+            }
+        }
+    }
+    
+    document.getElementById("loading").style.display = "none";
+
+    // Close the cart popup upon checkout attempt
+    toggleCartPopup(); 
+
+    // Save items data separately to show receipt
+    const receiptItems = cart.map(item => ({ 
+        name: item.name, 
+        quantity: item.quantity, 
+        subtotal: item.subtotal 
+    }));
+    
+    // Lakukan tindakan setelah checkout:
+    if (success) {
+        showPopup("Sukses", `Transaksi ${transactionId} berhasil dicatat dan dikirim ke Rekap/Database!`);
+    } else {
+        // Notifikasi gagal (jika Apps Script tidak merespons setelah 3x coba)
+        showPopup("Gagal Kirim Rekap", `Transaksi ${transactionId} berhasil dicatat di aplikasi, tetapi GAGAL mengirim ke Rekap karena masalah jaringan atau koneksi ke Apps Script. Coba periksa koneksi internet dan Web App URL.`);
+    }
+
+    showReceipt(transactionId, total, receiptItems);
+    cart = []; 
+    renderCart();
+    // Setelah checkout, coba muat ulang rekap agar data terbaru terlihat
+    if (document.getElementById("rekapBox").style.display !== "none") {
+        loadRekap();
+    }
+}
+
+// === FITUR STRUK & DOWNLOAD PDF ===
+
+/**
+ * Displays the transaction receipt modal.
+ */
+function showReceipt(transactionId, total, items) {
+    // Re-create the receipt box to ensure fresh data
+    const existingBox = document.getElementById("receiptBox");
+    if (existingBox) existingBox.remove();
+    
+    const receiptBox = document.createElement("div");
+    receiptBox.id = "receiptBox";
+    receiptBox.style.cssText = `
+        position:fixed;top:0;left:0;right:0;bottom:0;
+        background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;
+        z-index:10000;
+    `;
+    
+    const timestamp = new Date().toLocaleString("id-ID");
+
+    receiptBox.innerHTML = `
+        <div id="receiptContent" style="
+            background: var(--bg); color: var(--text); padding: 25px; border-radius: 14px;
+            width: 320px; font-family: Arial; box-shadow: 0 4px 25px rgba(0,0,0,0.4);
+            text-align: center; border: 2px solid var(--accent);
+        ">
+            <h3 style="margin:0 0 10px 0; color:var(--accent);">🧾 Struk Pembelian</h3>
+            <div style="font-size:13px; margin-bottom:10px; color:var(--muted);">
+                ID Transaksi: <b>${transactionId}</b><br>
+                Waktu: ${timestamp}
+            </div>
+            <table style="width:100%; border-collapse:collapse; font-size:14px; margin-bottom:15px; color:var(--text);">
+                <thead>
+                    <tr style="border-bottom:1px solid #374151;">
+                        <th style="text-align:left; padding-bottom: 8px;">Item</th>
+                        <th style="text-align:right; padding-bottom: 8px;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${items.map(it=>`
+                        <tr style="border-bottom:1px dashed #374151;">
+                            <td style="text-align:left; padding: 6px 0;">${it.name} (${it.quantity}x)</td>
+                            <td style="text-align:right; padding: 6px 0;">Rp ${it.subtotal.toLocaleString("id-ID")}</td>
+                        </tr>
+                    `).join("")}
+                </tbody>
+            </table>
+            <div style="border-top:2px solid var(--accent); padding-top:10px; font-weight:bold; font-size:1.2rem; color:var(--text);">
+                Total: Rp ${total.toLocaleString("id-ID")}
+            </div>
+            <div style="margin-top:20px; display:flex; gap:10px; justify-content:center;">
+                <button id="btnDownloadPDF" style="background:var(--accent); color:var(--bg); border:none; padding:8px 14px; border-radius:10px; cursor:pointer; font-weight: 700;">⬇️ Download PDF</button>
+                <button onclick="closeReceipt()" style="background:var(--card); color:var(--muted); border:1px solid var(--muted); padding:8px 14px; border-radius:10px; cursor:pointer; font-weight: 700;">Tutup</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(receiptBox);
+
+    // Add event listener for PDF download
+    document.getElementById("btnDownloadPDF").addEventListener("click", async () => {
+        // Hide buttons for a cleaner PDF capture
+        document.querySelector("#receiptContent div:last-child").style.display = 'none';
+
+        const { jsPDF } = window.jspdf;
+        // Use a background color on the capture for dark theme legibility in PDF
+        const canvas = await html2canvas(document.querySelector("#receiptContent"), {
+            backgroundColor: "#111827", 
+        });
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: [350, 500] });
+        // Calculate image size to fit 330pt width and maintain aspect ratio
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = 330;
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        
+        pdf.addImage(imgData, "PNG", 10, 10, pdfWidth, pdfHeight);
+        pdf.save(`Struk_${transactionId}.pdf`);
+
+        // Show buttons again
+        document.querySelector("#receiptContent div:last-child").style.display = 'flex';
+    });
+}
+
+/**
+ * Closes the receipt modal.
+ */
+function closeReceipt(){
+    const box = document.getElementById("receiptBox");
+    if(box) box.remove();
+}
+
+// Initial render
+document.addEventListener('DOMContentLoaded', () => {
+    renderProducts();
+    renderCart(); // Initialize cart button text
+});
+
+// === FITUR REKAP DATA (menggunakan Apps Script untuk fetch) ===
+
+/**
+ * Toggles the display of the transaction recap section.
+ */
+function toggleRekap() {
+    const grid = document.getElementById("productGrid");
+    const rekapBox = document.getElementById("rekapBox");
+    const filterBar = document.querySelector(".filter-bar");
+    const rekapButton = document.getElementById("rekapButton"); 
+
+    if (!grid || !rekapBox || !filterBar || !rekapButton) {
+        console.error("One or more required elements for toggleRekap are missing.");
+        return;
+    }
+
+    if (rekapBox.style.display === "none") {
+        grid.style.display = "none";
+        filterBar.style.display = "none";
+        rekapBox.style.display = "block";
+        rekapButton.textContent = "⬅️ Kembali ke Produk";
+        loadRekap(); // Panggil loadRekap setiap kali dibuka
+    } else {
+        grid.style.display = "grid";
+        filterBar.style.display = "flex";
+        rekapBox.style.display = "none";
+        rekapButton.textContent = "📊 Rekap";
+    }
+}
+
+/**
+ * Fetches and displays transaction data from Google Sheet via Apps Script (GET request).
+ * Menggunakan URL Web App yang sama dengan parameter 'action=getData'
+ */
+async function loadRekap() {
+    const tbody = document.querySelector("#rekapTable tbody");
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">⏳ Memuat data dari server...</td></tr>`;
+
+    try {
+        const res = await fetch(`${SCRIPT_URL}?action=getData`);
+        
+        // Memastikan Apps Script merespons JSON (tidak menggunakan 'no-cors' untuk GET)
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
+        const data = await res.json();
+
+        if (!data || data.length === 0 || data.error) {
+            const errorMsg = data.error || "Belum ada transaksi yang dicatat atau terjadi kesalahan umum di Apps Script.";
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--muted);">⚠️ ${errorMsg}</td></tr>`;
+            return;
+        }
+
+        // Display data in the table
+        tbody.innerHTML = data.map(row => `
+            <tr>
+                <td>${row[0] || '-'}</td> <!-- ID Transaksi -->
+                <td>${row[1] || '-'}</td> <!-- Waktu -->
+                <td>Rp ${Number(row[2] || 0).toLocaleString("id-ID")}</td> <!-- Total (Rp) -->
+                <td>${row[3] || '-'}</td> <!-- Detail Item -->
+            </tr>
+        `).join("");
+    } catch (err) {
+        console.error("Error loading recap:", err);
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--red);">⚠️ Gagal memuat data! Pastikan Web App URL benar dan di-deploy dengan akses 'Anyone'.</td></tr>`;
+    }
+}
+</script>
+</body>
+</html>
